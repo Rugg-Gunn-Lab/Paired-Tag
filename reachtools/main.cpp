@@ -44,22 +44,21 @@ void convert(string sample);
 void convert_help();
 void combine2(string sample, string ty);
 void combine2_help();
-void combine3(string sample, string ty);
-void combine3_help();
+void combinebulk(string sample, string ty);
+void combinebulk_help();
 void combine_dna(string sample, string ty);
 void combine_dna_help();
+void combine3(string sample, string ty);
+void combine3_help();
 void convert2(string sample);
 void convert2_help();
-void determine_type(string sample, string ty);
-void determine_type_help();
-void filt_bam(string list, string inbam, string type);
 /*
 void pca(string string);
 void pca_help();
 
 */
 
-string version = "2020.04.04";
+string version = "2020.03.11";
 
 
 
@@ -324,18 +323,32 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
-	if(mod == "combine3"){
-		if(argc < 3){
-			combine3_help();
-			return 1;
-		}
-		if(argc < 4){
-			combine3(argv[2], "gz");
-			return 0;
-		}
-		combine3(argv[2], argv[3]);
-		return 0;
-	}
+        if(mod == "combinebulk"){
+                if(argc < 3){
+                        combinebulk_help();
+                        return 1;
+                }
+                if(argc < 4){
+                        combinebulk(argv[2], "gz");
+                        return 0;
+                }
+                combinebulk(argv[2], argv[3]);
+                return 0;
+        }
+
+
+        if(mod == "combine3"){
+                if(argc < 3){
+                        combine3_help();
+                        return 1;
+                }
+                if(argc < 4){
+                        combine3(argv[2], "gz");
+                        return 0;
+                }
+                combine3(argv[2], argv[3]);
+                return 0;
+        }
 
 	if(mod == "combine_dna"){
 		if(argc < 3){
@@ -374,32 +387,7 @@ int main(int argc, char** argv) {
 		pairBarcodes(argv[2], argv[3]);
 		return 0;
 	}
-	if(mod == "determine_type"){
-		if(argc < 3){
-			determine_type_help();
-			return 1;
-		}
-		if(argc < 4){
-			determine_type(argv[2], "gz");
-			return 0;
-		}
-		determine_type(argv[2], argv[3]);
-		return 0;
-	}
 
-	if(mod == "filt_bam"){
-		if(argc<3){
-			cerr<<"get_type filt_bam input_list input_bam DNA/RNA"<<endl;
-			return 0;
-		}
-		if((argv[4] != string("DNA")) && (argv[4] != string("RNA"))){
-			cerr<<argv[4];
-			cerr<<"get_type filt_bam input_list input_bam DNA/RNA"<<endl;
-			return 0;
-		}
-		filt_bam(argv[2], argv[3], argv[4]);
-		return 0;
-	}
 	return 0;
 }
 
@@ -410,17 +398,14 @@ void help(){
 	cout << "\t(obs)convRead2\t\tExtract cell barcodes from read2, filt low quality reads and merge to 1 raw fastq file. \n\t\t\t\tNew version for tandom N in 5' of read2." << endl;
 	cout << "\t(obs)pre_processs\tExtract UMI and BC sequence from read2." << endl;
 	cout << "\t(obs)pairBarcodes\tPair the BC1-3(from pre_proc), BC4 and UMI to target sam/bam file." << endl;
-	cout << "\tcombine/combine2/combine3\tCombine Read1 with Read2, extract BC and UMI to a merged fastq file. Combine2 is used with 7-bp length barcodes, while combine3 is used with 8-bp length barcodes." << endl;
+	cout << "\tcombine/combine2\tCombine Read1 with Read2, extract BC and UMI to a merged fastq file." << endl;
 	cout << "\tconvert/convert2\tAfter mapping combined fastq to BC index, convert the resulting SAM file to fastq file ready for mapping." << endl;
 //	cout << "\textVal\t\tExtract reads with valid barcodes from merged read file." << endl;
 	cout << "\t(obs)splitBam\t\tSpit bam file into FILE_DNA.bam, FILE_RNA.bam and FILE_UND.bam." << endl;
 	cout << "\trmdup/rmdup2\t\tRemove duplicated reads based on UMI and mapped position." << endl;
-	cout << "\tdetermine_type\tDetermine source of reads (DNA / RNA) based on RE sequence at the end of Read2." << endl;
-	cout << "\tfilt_bam\tRemove cross-modality contaminated reads based on tdetermine_type results." << endl;
-	cout << "\tbam2Mtx/bam2Mtx2\tTransform splitted bam file into Matrix File. bam2Mtx2 extracts cell barcode only (bb:cc:dd) while bam2Mtx can extract additional barcode (aa:bb:cc:dd)" << endl << endl;
+	cout << "\tbam2Mtx/bam2Mtx2\tTransform splitted bam file into Matrix File." << endl << endl;
 
-	cout << "A typical pipeline now includes:\n\tStep1:\tcombine/combine2\n\tStep2:\tMapping to BC index\n\tStep3:\tconvert/convert2\n\tStep4:\tMapping to genome\n\tStep5:\trmdup/rmdup2\n\tStep6:\tbam2Mtx/bam2Mtx2\n\n";
-	cout << "Cross-modality contamination is infrequent but can sometimes be observed. In this case,\n\tStep6:\tfilt_bam\ncan be performed to remove contaminated reads in the final bam files before bam2Mtx conversion.\n";
+	cout << "A typical pipeline now includes:\n\tStep1:\tcombine/combine2\n\tStep2:\tMapping to BC index\n\tStep3:\tconvert/convert2\n\tStep4:\tMapping to genome\n\tStep5:\trmdup/rmdup2\n\tStep6:\tbam2Mtx/bam2Mtx2\n";
 	cout << "\n*(obs): functions for customized optimization only, no longer necessary for standard pipeline." << endl << endl;
 //	cout << endl << "\tgenerateMatrix\t\tGenerate data-matrix from peak calling file and bam file." << endl;
 
@@ -1053,7 +1038,7 @@ void bam2Mtx2(string bam, string ref){
 	}
 	FILE * in_file;
 	in_file = popen(s3.c_str(), "r");
-	char buffer[2000];
+	char buffer[4000];
 	cout << "Reading ref annotation..." << endl;
 	
 	/* version 2018, using displaceable annotation
@@ -1184,8 +1169,10 @@ void bam2Mtx2(string bam, string ref){
 				continue;
 			}
 			string gene_id = tmp[2];
-			string cell_id = sl.readname.substr(sl.readname.length()-19, 8); // 36:37:01:AACGTGTTCG
-			string umi = sl.readname.substr(sl.readname.length()-10, 10);
+//			string cell_id = sl.readname.substr(sl.readname.length()-19, 8); // 36:37:01:AACGTGTTCG
+			string cell_id = sl.readname.substr(sl.readname.length()-20, 11); // 45:42:39:05:TAGTCATA
+//			string umi = sl.readname.substr(sl.readname.length()-10, 10);
+			 string umi = sl.readname.substr(sl.readname.length()-8, 8);
 			//hash[gene_id][cell_id][umi] = true;
 			hash[cell_id][gene_id][umi] = true;
 			genelist[gene_id] = 0;
@@ -1474,8 +1461,8 @@ void bam2Mtx3(string bam, string ref){
 				continue;
 			}
 			string gene_id = tmp[2];
-			string cell_id = sl.readname.substr(sl.readname.length()-22, 11); // kk:36:37:01:AACGTGTTCG
-			// string cell_id = sl.readname.substr(sl.readname.length()-19, 8); // 36:37:01:AACGTGTTCG
+			// string cell_id = sl.readname.substr(sl.readname.length()-22, 11); // 36:37:01:AACGTGTTCG
+			string cell_id = sl.readname.substr(sl.readname.length()-19, 8); // 36:37:01:AACGTGTTCG
 			string umi = sl.readname.substr(sl.readname.length()-10, 10);
 			umi = umi + cxstring::int2str(sl.pos);
 			//hash[gene_id][cell_id][umi] = true;
@@ -1656,7 +1643,7 @@ void convRead2(string sample){
 
 		bc_library lib;
 		lib.init();
-		read2 read_2;
+		read2_2r read_2;
 		read_2.init(r2_line.seq);
 		read_2.trim();
 		//cout << read_2.dock << endl; //////////////////////////////////////////////////
@@ -1667,7 +1654,7 @@ void convRead2(string sample){
 			continue;
 		}
 		++doc;
-
+        
 
 		read_2.extract_barcode(lib, 8, 0);
 		if(read_2.type == "d")++dna;
@@ -1746,41 +1733,24 @@ void rmdup_help(){
 }
 
 void rmdup2(string bam){
-	int counts = 0;
 	string name = bam.substr(0, bam.length()-4);
 	string s1 = "samtools view ";
 	string s2 = bam;
 	string s3 = s1 + s2;
-	string s4 = name + "_dup.xls";
 	FILE * inbam;
 	inbam = popen(s3.c_str(), "r");
 	map<string, map<int, map<string, bool>>> hash;
-	map<string, map<int, map<string, int>>> dupcounts;
-	char buffer[2000];
+	char buffer[4000];
 	while(fgets(buffer, sizeof(buffer), inbam)){
 		string line(buffer);
 		vector<string> tmp = cxstring::split(line, "\t");
 		string chr = tmp[2];
 		int pos = cxstring::str2int(tmp[3]);
-		// aa:78:49:08:CCCCTCGTGG
-		// string umi = tmp[0].substr(tmp[0].length()-22, 22);
-		string umi = tmp[0].substr(tmp[0].length()-19, 19);
+		// 95:78:49:08:CCCCTCGTGG
+		string umi = tmp[0].substr(tmp[0].length()-20, 20);
 		hash[chr][pos][umi] = true;
-		dupcounts[chr][pos][umi]++;
 	}
 	pclose(inbam);
-	
-	//FILE * outxls;
-	//outxls = popen(s4.c_str(), "w");
-	ofstream stream(s4);
-	for(const auto &i: dupcounts){
-		for(const auto &ii: i.second){
-			for(const auto &iii: ii.second){
-				stream << i.first << '\t' << ii.first << '\t' << iii.first << '\t' << iii.second << '\n';
-			}
-    	}
-    }
-    stream.close();
 
 	s1 = "samtools view -h ";
 	s3 = s1 + s2;
@@ -1800,7 +1770,7 @@ void rmdup2(string bam){
 			vector<string> tmp = cxstring::split(line, "\t");
 			string chr = tmp[2];
 			int pos = cxstring::str2int(tmp[3]);
-			string umi = tmp[0].substr(tmp[0].length()-19, 19);
+			string umi = tmp[0].substr(tmp[0].length()-20, 20);
 			
 			if(hash[chr][pos][umi] == false)continue;
 
@@ -1815,7 +1785,7 @@ void rmdup2(string bam){
 void rmdup2_help(){
 	cout << "reachtools rmdup2 input.bam\nOutput is input_rmdup.bam" << endl;
 }
-
+// pre-process not used
 void pre_process(string r2){
 	string s1 = "zcat ";
 	string s2 = r2;
@@ -1833,7 +1803,7 @@ void pre_process(string r2){
 		string line(buffer);
 		line = cxstring::chomp(line);
 		in_line.read_part_record(infile, line);
-		read2 read_2;
+		read2_2r read_2;
 
 		read_2.init(in_line.seq);
 		read_2.trim();
@@ -1856,7 +1826,7 @@ void pre_process(string r2){
 	pclose(outfile);
 
 }
-
+// combine not used 
 void combine(string r2){
 	int total = 0;
 	int pass = 0;
@@ -1887,7 +1857,7 @@ void combine(string r2){
 		line2 = cxstring::chomp(line2);
 		in_line1.read_part_record(red1, line1);
 		in_line2.read_part_record(red2, line2);
-		read2 read_2;
+		read2_2r read_2;
 		read_2.init(in_line2.seq);
 		read_2.trim();
 		string new_seq = read_2.sbc1 + read_2.sbc2 + read_2.sbc3 + read_2.sbc4;
@@ -1915,25 +1885,18 @@ void combine(string r2){
 	return;
 
 }
+
 void combine_help(){
 	cout << "reachtools combine sample_Prefix" << endl;
 }
 
-// processing Paired-seq2 with 2-round ligation, 96 barcodes
+// processing Paired-seq2 with 2-round ligation
 void combine2(string r2, string ty){
 	int total = 0;
 	int pass = 0;
-	int dna = 0;
-	int rna = 0;
-	int und = 0;
 	string s1;
 	string s2;
 	string s3;
-	s1 = "gzip - > ";
-	s2 = r2 + "_type_report.xls.gz";
-	s3 = s1 + s2;
-	FILE * outType;
-	outType = popen(s3.c_str(), "w");
 	if(ty == "gz"){
 		s1 = "zcat ";
 		s2 = r2 + "_R1.fq.gz";
@@ -1973,46 +1936,43 @@ void combine2(string r2, string ty){
 		line2 = cxstring::chomp(line2);
 		in_line1.read_part_record(red1, line1);
 		in_line2.read_part_record(red2, line2);
+		//read2 read_2;//
 		read2_2r read_2;
 		read_2.init(in_line2.seq);
 		read_2.trim();
-		string new_seq = read_2.sbc1 + read_2.sbc2 + read_2.sbc4;
+		//this line is used for define cell id, add a transient line 
+		//string new_seq = read_2.sbc1 + read_2.sbc2 + read_2.sbc4;
+		//the up line is used for paired-tag (possibly modified from paired-seq)
+		//bc1-3 are introduced during split-pool, bc4 is introduced by RT for RNA reads or by MEB for DNA reads 
+		string new_seq = read_2.sbc1 + read_2.sbc2 + read_2.sbc3 + read_2.sbc4;
 		string umi = read_2.umi;
 		//string umi = in_line.seq.substr(0, 10);
 		in_line2.seq = new_seq;
-		in_line2.qual = in_line2.qual.substr(0, in_line2.seq.length());
-		if(in_line2.seq.length()!=18)continue;
-		string type = read_2.type;
-		if(type == "d"){
-			dna++;
-		}
-		if(type == "r"){
-			rna++;
-		}
-		if(type == "n"){
-			und++;
-		}
+//in_line2.qual = in_line2.qual.substr(0, in_line2.seq.length());
+//initial qual line,but totally not accurate, the begining bases are always better than the bases in the behind position            
+//roughly extract the fixed position, although this may be not the exactly correct for the index extracted, as it might adjust the positions
+		in_line2.qual = in_line2.qual.substr(0, 8) + in_line2.qual.substr(38, 8) + in_line2.qual.substr(76, 8) + in_line2.qual.substr(114, 5);
+		if(in_line2.seq.length()!=29)continue;
+		//if(in_line2.seq.length()!=18)continue;
+		//if(in_line2.seq.length()!=17)continue;
+		//in_line2.seq = new_seq;
 		string a;
 		stringstream as;
 		as << in_line2.readname;
 		as >> a;
 		in_line2.readname = a + ":" + umi + ":" + in_line1.seq + ":" + in_line1.qual;
-		string out_type = a + "\t" + type;
 		//in_line.readname = in_line.readname + ":" + umi;
 		in_line2.write_record(outfile);
-		fputs((out_type + "\n").c_str(), outType);
 		++pass;
 	}
 	pclose(red1);
 	pclose(red2);
 	pclose(outfile);
-	pclose(outType);
 
 	int aaa = pass*10000/total;
 	float ratio = (float)aaa / 100;
 	cout << "==================================================\nPaired-seq/Tag Barcode Locator Report: " << r2 << endl;
 	cout << "# total raw reads:\t\t" << total << endl << "# of full barcoded reads:\t" << pass << endl;
-	cout << "# of DNA reads:\t\t\t" << dna << endl << "# of RNA reads:\t\t\t" << rna << endl << "# of und reads:\t\t\t" << und << endl;
 	cout << "% of full barcode reads:\t" << ratio << "%\n==================================================" << endl << endl;
 	return;
 
@@ -2021,52 +1981,138 @@ void combine2_help(){
 	cout << "reachtools combine2 sample_Prefix gz/bz2(default gz)" << endl;
 }
 
-// processing Paired-seq2 with 2-round ligation, 384 barcodes
+void combinebulk(string r2, string ty){
+        int total = 0;
+        int pass = 0;
+        string s1;
+        string s2;
+        string s3;
+        if(ty == "gz"){
+                s1 = "zcat ";
+                s2 = r2 + "_R1.fq.gz";
+        }
+        else if(ty == "bz2"){
+                s1 = "bzcat ";
+                s2 = r2 + "_R1.fastq.bz2";
+        }
+        s3 = s1 + s2;
+        FILE * red1;
+        red1 = popen(s3.c_str(), "r");
+        s1 = "gzip - > ";
+        s2 = r2 + "_combined.fq.gz";
+        s3 = s1 + s2;
+        FILE * outfile;
+        outfile = popen(s3.c_str(), "w");
+        if(ty == "gz"){
+                s1 = "zcat ";
+                s2 = r2 + "_R2.fq.gz";
+        }
+        else if(ty == "bz2"){
+                s1 = "bzcat ";
+                s2 = r2 + "_R2.fastq.bz2";
+        }
+        s3 = s1 + s2;
+        FILE * red2;
+        red2 = popen(s3.c_str(), "r");
+        char buffer[2000];
+        fqline in_line1;
+        fqline in_line2;
+ 	while(fgets(buffer, sizeof(buffer), red1)){
+                ++total;
+                string line1(buffer);
+                fgets(buffer, sizeof(buffer), red2);
+                string line2(buffer);
+                line1 = cxstring::chomp(line1);
+                line2 = cxstring::chomp(line2);
+                
+		in_line1.read_part_record(red1, line1);
+                in_line2.read_part_record(red2, line2);
+		//in_line2.seq = "AACGTGATGTGGCCGATGTTTCGCATCGGCGTACGACTAACGTGATGGATTCGAGGAGCGTGTGCGAACTCAGACCAACGTGATATCCACGTGCTTGAG" + in_line2.seq;
+		//in_line2.qual = "JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ" + in_line2.qual;
+
+		//modified 20220901 for bulk assay, sometimes start with constant sequence could cause serious sequence error, so ignor the first 15 bases AGGCCAGAGCATTCG
+		in_line2.seq = "AACGTGATGTGGCCGATGTTTCGCATCGGCGTACGACTAACGTGATGGATTCGAGGAGCGTGTGCGAACTCAGACCAACGTGATATCCACGTGCTTGAGAGGCCAGAGCATTCG" + in_line2.seq.substr(15, in_line2.seq.length());
+		in_line2.qual = "JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ" + in_line2.qual.substr(15, in_line2.seq.length());
+		read2_2r read_2;
+                read_2.init(in_line2.seq);
+                read_2.trim();
+		string new_seq = read_2.sbc1 + read_2.sbc2 + read_2.sbc3 + read_2.sbc4;
+                string umi = read_2.umi;
+		//after add 99 nt BC3+30con+BC2+30con+BC1+15con, for paired mapping, 
+		string tmpseq = in_line2.seq.substr(146, in_line2.seq.length());
+                string tmpqual = in_line2.qual.substr(146, in_line2.seq.length());
+                in_line2.seq = new_seq;
+                in_line2.qual = in_line2.qual.substr(0, in_line2.seq.length());
+                if(in_line2.seq.length()!=29)continue;
+		//in_line2.seq = new_seq;
+                //in_line2.qual = in_line2.qual.substr(0, in_line2.seq.length());
+                //if(in_line2.seq.length()!=29)continue;
+                string a;
+                stringstream as;
+                as << in_line2.readname;
+                as >> a;
+               	in_line2.readname = a + ":" + umi + ":" + in_line1.seq + ":" + in_line1.qual + ":" + tmpseq + ":" + tmpqual;
+                //in_line.readname = in_line.readname + ":" + umi;
+                //                in_line2.write_record(outfile);
+                in_line2.write_record(outfile);
+                ++pass;
+        }
+        pclose(red1);
+        pclose(red2);
+        pclose(outfile);
+
+        int aaa = pass*10000/total;
+        float ratio = (float)aaa / 100;
+        cout << "==================================================\nPaired-seq/Tag Barcode Locator Report: " << r2 << endl;
+        cout << "# total raw reads:\t\t" << total << endl << "# of full barcoded reads:\t" << pass << endl;
+        cout << "% of full barcode reads:\t" << ratio << "%\n==================================================" << endl << endl;
+        return;
+
+}
+void combinebulk_help(){
+        cout << "reachtools combinebulk sample_Prefix gz/bz2(default gz)" << endl;
+}
+
+
+
+// processing merge R1 and R2 and extract 3-round barcodes and umi for mapping
 void combine3(string r2, string ty){
 	int total = 0;
 	int pass = 0;
 	string s1;
 	string s2;
 	string s3;
-	int dna = 0;
-	int rna = 0;
-	int und = 0;
-	s1 = "gzip - > ";
-	s2 = r2 + "_type_report.xls.gz";
-	s3 = s1 + s2;
-	FILE * outType;
-	outType = popen(s3.c_str(), "w");
 	if(ty == "gz"){
 		s1 = "zcat ";
 		s2 = r2 + "_R1.fq.gz";
-	}
+		}
 	else if(ty == "bz2"){
 		s1 = "bzcat ";
 		s2 = r2 + "_R1.fastq.bz2";
-	}
+		}
 	s3 = s1 + s2;
 	FILE * red1;
 	red1 = popen(s3.c_str(), "r");
 	s1 = "gzip - > ";
-	s2 = r2 + "_combined.fq.gz";
+	s2 = r2 + "_combined3.fq.gz";
 	s3 = s1 + s2;
 	FILE * outfile;
 	outfile = popen(s3.c_str(), "w");
 	if(ty == "gz"){
 		s1 = "zcat ";
 		s2 = r2 + "_R2.fq.gz";
-	}
+		}
 	else if(ty == "bz2"){
 		s1 = "bzcat ";
 		s2 = r2 + "_R2.fastq.bz2";
-	}
+		}
 	s3 = s1 + s2;
 	FILE * red2;
-	red2 = popen(s3.c_str(), "r");
+ 	red2 = popen(s3.c_str(), "r");
 	char buffer[2000];
 	fqline in_line1;
 	fqline in_line2;
-	while(fgets(buffer, sizeof(buffer), red1)){
+while(fgets(buffer, sizeof(buffer), red1)){
 		++total;
 		string line1(buffer);
 		fgets(buffer, sizeof(buffer), red2);
@@ -2075,54 +2121,53 @@ void combine3(string r2, string ty){
 		line2 = cxstring::chomp(line2);
 		in_line1.read_part_record(red1, line1);
 		in_line2.read_part_record(red2, line2);
-		read2_3r read_2;
-		read_2.init(in_line2.seq);
-		read_2.trim();
-		string new_seq = read_2.sbc1 + read_2.sbc2 + read_2.sbc4;
-		string umi = read_2.umi;
-		//string umi = in_line.seq.substr(0, 10);
-		in_line2.seq = new_seq;
-		in_line2.qual = in_line2.qual.substr(0, in_line2.seq.length());
-		if(in_line2.seq.length()!=20)continue;
-		string type = read_2.type;
-		if(type == "d"){
-			dna++;
-		}
-		if(type == "r"){
-			rna++;
-		}
-		if(type == "n"){
-			und++;
-		}
-		string a;
-		stringstream as;
-		as << in_line2.readname;
-		as >> a;
-		in_line2.readname = a + ":" + umi + ":" + in_line1.seq + ":" + in_line1.qual;
-		string out_type = a + "\t" + type;
-		//in_line.readname = in_line.readname + ":" + umi;
+		//read2 read_2;
+		read2_2r read_2;
+                read_2.init(in_line2.seq);
+                read_2.trim();
+		//this line is used for define cell id, add a transient line
+		//string new_seq = read_2.sbc1 + read_2.sbc2 + read_2.sbc4;
+		//the up line is used for paired-tag (possibly modified from paired-seq)
+                //bc1-3 are introduced during split-pool, bc4 is introduced by RT for RNA reads or by MEB for DNA reads
+                string new_seq = read_2.sbc1 + read_2.sbc2 + read_2.sbc3 + read_2.sbc4;
+                string umi = read_2.umi;
+                //string umi = in_line.seq.substr(0, 10);
+                // for temp store read2 seq and qual: 8BC3 +30con +8BC2 +30con +8BC1 +30con +5Meb +7N +dU +19ME=146bp
+                string tmpseq = in_line2.seq.substr(146, in_line2.seq.length());
+                string tmpqual = in_line2.qual.substr(146, in_line2.seq.length());
+                in_line2.seq = new_seq;
+		//initial qual line,but totally not accurate, the begining bases are always better than the bases in the behind position            
+		//in_line2.qual = in_line2.qual.substr(0, in_line2.seq.length());
+		//roughly extract the fixed position, although this may be not the exactly correct for the index extracted, as it might adjust the positions
+		in_line2.qual = in_line2.qual.substr(0, 8) + in_line2.qual.substr(38, 8) + in_line2.qual.substr(76, 8) + in_line2.qual.substr(114, 5);
+		if(in_line2.seq.length()!=29)continue;
+               //if(in_line2.seq.length()!=18)continue;
+               //if(in_line2.seq.length()!=17)continue;
+               //in_line2.seq = new_seq;
+                string a;
+                stringstream as;
+                as << in_line2.readname;
+                as >> a;
+                in_line2.readname = a + ":" + umi + ":" + in_line1.seq + ":" + in_line1.qual + ":" + tmpseq + ":" + tmpqual;
+                //in_line.readname = in_line.readname + ":" + umi;
 		in_line2.write_record(outfile);
-		fputs((out_type + "\n").c_str(), outType);
 		++pass;
-	}
-	pclose(red1);
-	pclose(red2);
-	pclose(outfile);
-	pclose(outType);
+        }
+        pclose(red1);
+        pclose(red2);
+        pclose(outfile);
 
-	int aaa = pass*10000/total;
-	float ratio = (float)aaa / 100;
-	cout << "==================================================\nPaired-seq/Tag Barcode Locator Report: " << r2 << endl;
-	cout << "# total raw reads:\t\t" << total << endl << "# of full barcoded reads:\t" << pass << endl;
-	cout << "# of DNA reads:\t\t\t" << dna << endl << "# of RNA reads:\t\t\t" << rna << endl << "# of und reads:\t\t\t" << und << endl;
-	cout << "% of full barcode reads:\t" << ratio << "%\n==================================================" << endl << endl;
-	return;
+        int aaa = pass*10000/total;
+        float ratio = (float)aaa / 100;
+        cout << "==================================================\nPaired-seq/Tag Barcode Locator Report: " << r2 << endl;
+        cout << "# total raw reads:\t\t" << total << endl << "# of full barcoded reads:\t" << pass << endl;
+        cout << "% of full barcode reads:\t" << ratio << "%\n==================================================" << endl << endl;
+        return;
 
 }
 void combine3_help(){
-	cout << "reachtools combine3 sample_Prefix gz/bz2(default gz)" << endl;
+        cout << "reachtools combine3 sample_Prefix gz/bz2(default gz)" << endl;
 }
-
 void combine_dna(string r2, string ty){
 	int total = 0;
 	int pass_ATAC = 0;
@@ -2414,150 +2459,3 @@ void convert2_help(){
 	return;
 
 }
-
-void filt_bam(string list, string inbam, string type){
-	string s1;
-	string s2;
-	string s3;
-	int total = 0;
-	int pf_reads = 0;
-	char t = 'd';
-	if(type == "RNA")t='r';
-	s1 = "zcat ";
-	s2 = list;
-	s3 = s1 + s2;
-	FILE * infile;
-	infile = popen(s3.c_str(), "r");
-	char buffer[2000];
-	map<string, int> rname;
-	map<string, int>::iterator irname;
-	while(fgets(buffer, sizeof(buffer), infile)){
-		string line(buffer);
-		line = cxstring::chomp(line);
-		vector<string> sp = cxstring::split(line, "\t");
-		if(sp[1][0]==t)continue;
-		rname[sp[0]]=1;
-	}
-	cout<<"filtType: Readname read finished.."<<endl;
-	pclose(infile);
-	cout<<"filtType: Processing bam file..."<<endl;
-	s1 = "samtools view -h ";
-	s2 = inbam;
-	s3 = s1 + s2;
-	infile = popen(s3.c_str(), "r");
-	// samtools view - -b > output.bam
-	s1 = "samtools view - -b > ";
-	s2 = inbam + "_filtType.bam";
-	s3 = s1 + s2;
-	FILE * outfile;
-	outfile=popen(s3.c_str(), "w");
-	int sub = 0;
-	while(fgets(buffer, sizeof(buffer), infile)){
-		string line(buffer);
-	
-		// if(sub==1000000){
-		// 	sub=0;
-		// 	cout<<"[filtering bam] "<<total<<" reads processed..." << endl;
-		// }
-		if(line.substr(0, 1) == "@"){
-			fputs(line.c_str(), outfile);
-			continue;
-		}
-		total++;
-		sub++;
-		
-		vector<string> sp = cxstring::split(line, "\t");
-		vector<string> sp1 = cxstring::split(sp[0], ":");
-		string cur_rname = "@"+sp1[0]+":"+sp1[1]+":"+sp1[2]+":"+sp1[3]+":"+sp1[4]+":"+sp1[5]+":"+sp1[6];
-		irname=rname.find(cur_rname);
-		if(irname!=rname.end())continue;
-		pf_reads++;
-		fputs(line.c_str(), outfile);
-	}
-	pclose(infile);
-	pclose(outfile);
-	cout <<"========== filtType Report ==========" << endl;
-	cout <<"Total:\t"<<total<<" reads in bam"<<endl;
-	cout<<"PF:\t"<<pf_reads<<" reads writen"<<endl;
-
-
-
-}
-
-void determine_type(string r2, string ty){
-	int total = 0;
-	int pass = 0;
-	int dna = 0;
-	int rna = 0;
-	int und = 0;
-	string s1;
-	string s2;
-	string s3;
-	s1 = "gzip - > ";
-	s2 = r2 + "_type_report.xls.gz";
-	s3 = s1 + s2;
-	FILE * outfile;
-	outfile = popen(s3.c_str(), "w");
-	if(ty == "gz"){
-		s1 = "zcat ";
-		s2 = r2 + "_R2.fq.gz";
-	}
-	else if(ty == "bz2"){
-		s1 = "bzcat ";
-		s2 = r2 + "_R2.fastq.bz2";
-	}
-	s3 = s1 + s2;
-	FILE * red2;
-	red2 = popen(s3.c_str(), "r");
-	char buffer[2000];
-	fqline in_line1;
-	while(fgets(buffer, sizeof(buffer), red2)){
-		++total;
-		string line1(buffer);
-		line1 = cxstring::chomp(line1);
-		in_line1.read_part_record(red2, line1);
-		read2_2r read_2;
-		read_2.init(in_line1.seq);
-		read_2.trim();
-		string new_seq = read_2.sbc1 + read_2.sbc2 + read_2.sbc4;
-		if(new_seq.length()!=18)continue;
-		string type = read_2.type;
-		if(type == "d"){
-			dna++;
-		}
-		if(type == "r"){
-			rna++;
-		}
-		if(type == "n"){
-			und++;
-		}
-		in_line1.seq = new_seq;
-		in_line1.qual = in_line1.qual.substr(0, in_line1.seq.length());
-
-		string a;
-		stringstream as;
-		as << in_line1.readname;
-		as >> a;
-		string out_type = a + "\t" + type;
-
-		fputs((out_type + "\n").c_str(), outfile);
-		++pass;
-	}
-
-	pclose(red2);
-	pclose(outfile);
-
-	int aaa = pass*10000/total;
-	float ratio = (float)aaa / 100;
-	cout << "==================================================\nPaired-seq/Tag Barcode Locator Report: " << r2 << endl;
-	cout << "# total raw reads:\t\t" << total << endl << "# of full barcoded reads:\t" << pass << endl;
-	cout << "# of DNA reads:\t\t\t" << dna << endl << "# of RNA reads:\t\t\t" << rna << endl << "# of und reads:\t\t\t" << und << endl;
-	cout << "% of full barcode reads:\t" << ratio << "%\n==================================================" << endl << endl;
-	return;
-
-}
-void determine_type_help(){
-	cout << "reachtools determine_type library_init based on Read2 fastq file (e.g. CZ111_R2.fq.gz)." << endl;
-	return;
-}
-
