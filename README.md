@@ -1,3 +1,7 @@
+**This is a fork of [Paired-Tag](https://github.com/cxzhu/Paired-Tag) with a modified version of reachtools for use in the [scMTR-seq](https://github.com.mcas.ms/laurabiggins/nf_mtr_seq) method.**
+
+===============================================================================
+
 # Preprocessing of Paired-Tag/Paired-seq datasets
 
 #### For latest protocol, please refer to [Paired-Tag protocol & FAQs](https://github.com/cxzhu/Paired-Tag/tree/master/protocol).
