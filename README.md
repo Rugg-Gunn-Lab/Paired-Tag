@@ -1,3 +1,6 @@
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13833575.svg)](https://doi.org/10.5281/zenodo.13833575)
+
 **This is a fork of [Paired-Tag](https://github.com/cxzhu/Paired-Tag) with a modified version of reachtools for use in the [scMTR-seq](https://github.com.mcas.ms/laurabiggins/nf_mtr_seq) method.**
 
 ===============================================================================
