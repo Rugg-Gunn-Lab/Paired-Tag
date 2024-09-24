@@ -1,0 +1,24 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: Paired-Tag with reachtools for scMTR-seq
+message: >-
+  If you use this software, please cite it using the
+  metadata from this file.
+type: software
+authors:
+  - given-names: Yang
+    family-names: Wang
+repository-code: 'https://github.com/HDBI/Paired-Tag'
+abstract: >-
+  A fork of Paired-Tools with a version of reachtools
+  customised for the scMTR-seq method
+keywords:
+  - single cell multiomics
+  - multiomics
+  - single cell sequencing
+license: MIT
+commit: 6d088373eab77b7b0a3dbefbbcc99530575c56af
+version: NA
+date-released: '2024-09-24'
